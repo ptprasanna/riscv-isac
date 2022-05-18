@@ -22,7 +22,7 @@ import multiprocessing as mp
 from collections.abc import MutableMapping
 
 
-unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu','flw','fld','fsw','fsd',\
+unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu', 'flh', 'flw','fld', 'fsh', 'fsw','fsd',\
         'bgeu', 'bltu', 'sltiu', 'sltu','c.lw','c.ld','c.lwsp','c.ldsp',\
         'c.sw','c.sd','c.swsp','c.sdsp','mulhu','divu','remu','divuw',\
         'remuw','aes64ds','aes64dsm','aes64es','aes64esm','aes64ks2',\
@@ -237,7 +237,6 @@ class csr_registers(MutableMapping):
             self.csr_regs["mhpmevent"+str(i)] = int('323',16) + (i-3)
 
     def __setitem__ (self,key,value):
-
         if(isinstance(key, str)):
             self.csr[self.csr_regs[key]] = value
         else:
@@ -288,7 +287,10 @@ class archState:
         else:
             self.x_rf = ['0000000000000000']*32
 
-        if flen == 32:
+        if flen == 16:
+            self.f_rf = ['0000']*32
+            self.fcsr = 0
+        elif flen == 32:
             self.f_rf = ['00000000']*32
         else:
             self.f_rf = ['0000000000000000']*32
@@ -334,7 +336,10 @@ def define_sem(flen, rsval, postfix, local_dict):
     :local_dict: Holding the copy of all the local variables from the function calling this function
     :return: The dictionary of variables with it's values
     '''
-    if flen == 32:
+    if flen == 16:
+        e_sz = 5
+        m_sz = 10
+    elif flen == 32:
         e_sz = 8
         m_sz = 23
     else:
@@ -344,7 +349,10 @@ def define_sem(flen, rsval, postfix, local_dict):
     local_dict['fs'+postfix[2]] = int(bin_val[0])
     exp = bin_val[1:e_sz+1]
     man = bin_val[e_sz+1:]
-    if flen == 32:
+    if flen == 16:
+        feh = '1000'
+        fmh = '100'
+    elif flen == 32:
         feh = '1'
         fmh = '10'
     else:
@@ -633,17 +641,21 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                 rs1_hi_val = struct.unpack(unsgn_sz, bytes.fromhex(arch_state.x_rf[rs1+1]))[0]
                 rs1_val = (rs1_hi_val << 32) | rs1_val
         elif rs1_type == 'x':
-            if instr.instr_name in ["fmv.w.x","fcvt.s.l","fcvt.s.lu","fcvt.d.w","fcvt.d.wu"]:
+            if instr.instr_name in ["fmv.w.x","fcvt.s.l","fcvt.s.lu","fcvt.d.w","fcvt.d.wu", "fcvt.h.l", "fcvt.h.lu", "fmv.h.x"]:
                 if arch_state.flen == 64:
                     rs1val = int('0x' + (arch_state.x_rf[rs1]).lower(),16)
                 elif arch_state.flen == 32:
                     rs1val = int('0x' + (arch_state.x_rf[rs1][-8:]).lower(),16)
+                else:
+                    rs1val = int('0x' + (arch_state.x_rf[rs1][-4:]).lower(),16)
                 rs1_val = twos_complement(rs1val,arch_state.flen) #To handle the signed integer values
             else:
                 rs1_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs1]))[0]
         elif rs1_type == 'f':
-            if instr.instr_name in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fcvt.s.l", "fcvt.s.lu"]:
+            if instr.instr_name in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fcvt.s.l", "fcvt.s.lu", "fcvt.h.s"]:
                 rs1_val = '0x' + (arch_state.f_rf[rs1][-8:]).lower()
+            elif instr.instr_name in ["fadd.h","fsub.h","fmul.h","fdiv.h","fsqrt.h","fmadd.h","fmsub.h","fnmadd.h","fnmsub.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fmv.x.h","fmv.h.x","fcvt.s.h","fcvt.h.s", "fcvt.h.d", "fcvt.d.h","fcvt.wu.h","fcvt.h.wu","fcvt.w.h","fcvt.h.w","fcvt.lu.h","fcvt.h.lu","fcvt.l.h","fcvt.h.l","fsgnj.h","fsgnjn.h","fsgnjx.h","fclass.h"]:
+                rs1_val = '0x' + (arch_state.f_rf[rs1][-4:]).lower()
             else:
                 rs1_val = '0x' + (arch_state.f_rf[rs1]).lower()
     except struct.error as err:
@@ -663,6 +675,8 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
         elif rs2_type == 'f':
             if instr.instr_name in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s"]:
                 rs2_val = '0x' + (arch_state.f_rf[rs2])[-8:].lower()
+            elif instr.instr_name in ["fadd.h","fsub.h","fmul.h","fdiv.h","fmadd.h","fmsub.h","fnmadd.h","fnmsub.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fsgnj.h","fsgnjn.h","fsgnjx.h"]:
+                rs2_val = '0x' + (arch_state.f_rf[rs2])[-4:].lower()
             else:
                 rs2_val = '0x' + (arch_state.f_rf[rs2]).lower()
     except struct.error as err:
@@ -682,7 +696,9 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
     else:
         result_count = instr.rd_nregs
 
-    if instr.instr_name in ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmadd.d","fmsub.d","fnmadd.d","fnmsub.d"]:
+    if instr.instr_name in ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s",\
+        "fmadd.d","fmsub.d","fnmadd.d","fnmsub.d",\
+        "fmadd.h","fmsub.h","fnmadd.h","fnmsub.h"]:
         rs3_val = '0x' + (arch_state.f_rf[rs3]).lower()
 
     if instr.instr_name in ['csrrwi']:
@@ -692,7 +708,7 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
     rm = instr.rm
     #Checking the rm  value if it is not none assigning it respectively from the respective csr in csr_regfile
     if rm is not None:
-         if(rm==7 or rm==None):
+         if(rm==7):
               rm_val = csr_regfile.csr_regs["fcsr"]
          else:
               rm_val = rm
@@ -708,6 +724,9 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
 
     if instr.instr_name == "jalr":
         ea_align = (rs1_val + imm_val) % 4
+
+    if instr.instr_name in ['fsh','flh']:
+        ea_align = (rs1_val + imm_val) % 2
     if instr.instr_name in ['sw','sh','sb','lw','lhu','lh','lb','lbu','lwu','flw','fsw']:
         ea_align = (rs1_val + imm_val) % 4
     if instr.instr_name in ['ld','sd','fld','fsd']:
@@ -781,7 +800,9 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                     stats.covpt.append(str(coverpoints))
                                     cgf[cov_labels]['op_comb'][coverpoints] += 1
                         if 'val_comb' in value and len(value['val_comb']) != 0:
-                            if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s","fadd.d","fsub.d","fmul.d","fdiv.d","fmax.d","fmin.d","feq.d","flt.d","fle.d","fsgnj.d","fsgnjn.d","fsgnjx.d"]:
+                            if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s",\
+                                "fadd.d","fsub.d","fmul.d","fdiv.d","fmax.d","fmin.d","feq.d","flt.d","fle.d","fsgnj.d","fsgnjn.d","fsgnjx.d",\
+                                'fadd.h',"fsub.h","fmul.h","fdiv.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fsgnj.h","fsgnjn.h","fsgnjx.h"]:
                                 lcls=locals().copy()
                                 #Function calls to expand the rs1 and rs2 values into it's respective floating point number (sign, exponent and mantissa) from the returned Hexa value
                                 define_sem(int(arch_state.flen),rs1_val,"rs1",lcls)
@@ -792,7 +813,9 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                             stats.ucovpt.append(str(coverpoints))
                                         stats.covpt.append(str(coverpoints))
                                         cgf[cov_labels]['val_comb'][coverpoints] += 1
-                            elif instr.instr_name in ["fsqrt.s","fcvt.wu.s","fcvt.w.s","fclass.s","fclass.d","fsqrt.d","fcvt.wu.d","fcvt.w.d","fcvt.l.s","fcvt.lu.s","fmv.x.w","fcvt.d.s","fcvt.s.d","fmv.x.d","fcvt.l.d","fcvt.lu.d"]:
+                            elif instr.instr_name in ["fsqrt.s","fcvt.wu.s","fcvt.w.s","fclass.s","fcvt.l.s","fcvt.lu.s","fmv.x.w",\
+                                "fclass.d","fsqrt.d","fcvt.wu.d","fcvt.w.d","fcvt.d.s","fcvt.s.d","fmv.x.d","fcvt.l.d","fcvt.lu.d",\
+                                "fclass.h","fsqrt.h","fcvt.wu.h","fcvt.w.h","fcvt.h.s","fcvt.s.h", "fcvt.h.d","fcvt.d.h","fmv.x.h","fcvt.l.h","fcvt.lu.h"]:
                                 lcls=locals().copy()
                                 #Function calls to expand the rs1 value into it's respective floating point number (sign, exponent and mantissa) from the returned Hexa value
                                 define_sem(int(arch_state.flen),rs1_val,"rs1",lcls)
@@ -802,7 +825,9 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                             stats.ucovpt.append(str(coverpoints))
                                         stats.covpt.append(str(coverpoints))
                                         cgf[cov_labels]['val_comb'][coverpoints] += 1
-                            elif instr.instr_name in ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmadd.d","fmsub.d","fnmadd.d","fnmsub.d"]:
+                            elif instr.instr_name in ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s",\
+                                "fmadd.d","fmsub.d","fnmadd.d","fnmsub.d",\
+                                "fmadd.h","fmsub.h","fnmadd.h","fnmsub.h"]:
                                 lcls=locals().copy()
                                 #Function calls to expand the rs1,rs2 and rs3 values into it's respective floating point number (sign, exponent and mantissa) from the returned Hexa value
                                 define_sem(int(arch_state.flen),rs1_val,"rs1",lcls)
