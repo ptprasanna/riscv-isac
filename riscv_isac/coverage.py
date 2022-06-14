@@ -570,9 +570,16 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
     global stats
     global result_count
 
+
     mnemonic = instr.mnemonic
     commitvalue = instr.reg_commit
 
+    #-------------------ZFINX----------------------------
+    #To check if Zfinx if part of the ISA
+    has_Zfinx = 0
+    if "Zfinx" in str(cgf[list(cgf.keys())[0]]['config']):
+        has_Zfinx = 1
+    #-----------------------------------------------------
     # assign default values to operands
     rs1 = 0
     rs2 = 0
@@ -640,10 +647,13 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
             if instr.rs1_nregs == 2:
                 rs1_hi_val = struct.unpack(unsgn_sz, bytes.fromhex(arch_state.x_rf[rs1+1]))[0]
                 rs1_val = (rs1_hi_val << 32) | rs1_val
-        elif rs1_type == 'x':
+        elif rs1_type == 'x' and has_Zfinx == 0:
             if instr.instr_name in ["fmv.w.x","fcvt.s.l","fcvt.s.lu","fcvt.d.w","fcvt.d.wu", "fcvt.h.l", "fcvt.h.lu", "fmv.h.x"]:
                 if arch_state.flen == 64:
-                    rs1val = int('0x' + (arch_state.x_rf[rs1]).lower(),16)
+                    if instr.instr_name in ["fcvt.d.w","fcvt.d.wu"] and int('0x' + ((arch_state.x_rf[rs1]).lower()[0]), 16) > 7 and xlen == 32:
+                            rs1val = int('0x' + 'ffffffff' + (arch_state.x_rf[rs1]).lower(),16)
+                    else:
+                        rs1val = int('0x' + (arch_state.x_rf[rs1]).lower(),16)
                 elif arch_state.flen == 32:
                     rs1val = int('0x' + (arch_state.x_rf[rs1][-8:]).lower(),16)
                 else:
@@ -651,6 +661,20 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                 rs1_val = twos_complement(rs1val,arch_state.flen) #To handle the signed integer values
             else:
                 rs1_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs1]))[0]
+	#--------------------ZFINX-----------------------------------------------
+        #For Zfinx extension, rs1_type will be 'x', use of arch_state.x_rf instead of arch_state.f_rf as in Float extension
+        elif rs1_type == 'x' and has_Zfinx == 1:
+            if instr.instr_name in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s","fcvt.wu.s","fcvt.w.s","fcvt.lu.s","fcvt.l.s"]:
+                rs1_val = '0x' + (arch_state.x_rf[rs1][-8:]).lower()
+            elif instr.instr_name in ["fmv.w.x","fcvt.s.l","fcvt.s.lu","fcvt.d.w","fcvt.d.wu"]:
+                if arch_state.flen == 64:
+                    rs1val = int('0x' + (arch_state.x_rf[rs1]).lower(),16)
+                elif arch_state.flen == 32:
+                    rs1val = int('0x' + (arch_state.x_rf[rs1][-8:]).lower(),16)
+                rs1_val = twos_complement(rs1val,arch_state.flen) #To handle the signed integer values
+            else:
+                rs1_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs1]))[0]
+    #-------------------------------------------------------------------------
         elif rs1_type == 'f':
             if instr.instr_name in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fcvt.s.l", "fcvt.s.lu", "fcvt.h.s"]:
                 rs1_val = '0x' + (arch_state.f_rf[rs1][-8:]).lower()
@@ -670,11 +694,31 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
             if instr.rs2_nregs == 2:
                 rs2_hi_val = struct.unpack(unsgn_sz, bytes.fromhex(arch_state.x_rf[rs2+1]))[0]
                 rs2_val = (rs2_hi_val << 32) | rs2_val
-        elif rs2_type == 'x':
+        elif rs2_type == 'x' and has_Zfinx == 0:
             rs2_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs2]))[0]
+
+        #---------------------------ZFINX--------------------------------------------------------
+        #For Zfinx extension, rs2_type will be 'x', use of arch_state.x_rf instead of arch_state.f_rf as in Float extension
+        elif rs2_type == 'x' and has_Zfinx == 1:
+            if instr.instr_name in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s"]:
+                rs2_val = '0x' + (arch_state.x_rf[rs2])[-8:].lower()
+            elif instr.instr_name in ['addi', 'jalr']: 
+                rs2_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs2]))[0]
+            elif instr.instr_name in ["fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w"]:
+                rs2_val = '0x' + (arch_state.f_rf[rs2]).lower()
+            else:
+                rs2_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs2]))[0]
+        #----------------------------------------------------------------------------------------
+
         elif rs2_type == 'f':
             if instr.instr_name in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s"]:
                 rs2_val = '0x' + (arch_state.f_rf[rs2])[-8:].lower()
+            elif instr.instr_name == "fsd" and xlen == 32:
+                if int('0x' + ((arch_state.f_rf[rs2]).lower()[8]), 16) < 8:
+                    rs2val = int('0x' + '00000000' + (arch_state.f_rf[rs2])[8:].lower(),16)
+                else:
+                    rs2val = int((arch_state.f_rf[rs2]).lower(),16)
+                rs2_val = twos_complement(rs2val,arch_state.flen)
             elif instr.instr_name in ["fadd.h","fsub.h","fmul.h","fdiv.h","fmadd.h","fmsub.h","fnmadd.h","fnmsub.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fsgnj.h","fsgnjn.h","fsgnjx.h"]:
                 rs2_val = '0x' + (arch_state.f_rf[rs2])[-4:].lower()
             else:
@@ -700,7 +744,11 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
         "fmadd.d","fmsub.d","fnmadd.d","fnmsub.d",\
         "fmadd.h","fmsub.h","fnmadd.h","fnmsub.h"]:
         rs3_val = '0x' + (arch_state.f_rf[rs3]).lower()
-
+        #---------------------ZFINX------------------------
+        #For Zfinx extension, rs2_type will be 'x', use of arch_state.x_rf instead of arch_state.f_rf as in Float extension
+        if has_Zfinx == 1:
+            rs3_val = '0x' + (arch_state.x_rf[rs3])[-8:].lower()
+        #--------------------------------------------------
     if instr.instr_name in ['csrrwi']:
         csr_regfile.csr_regs["fcsr"] = instr.zimm
 
@@ -764,6 +812,13 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                 stats.ucovpt.append('rs2 : ' + 'x'+str(rs2))
                             stats.covpt.append('rs2 : ' + 'x'+str(rs2))
                             value['rs2']['x'+str(rs2)] += 1
+                        #----------------ZFINX------------------------------
+                        if 'rs3' in value and 'x'+str(rs3) in value['rs3']:
+                            if value['rs3']['x'+str(rs3)] == 0:
+                                stats.ucovpt.append('rs3 : ' + 'x'+str(rs3))
+                            stats.covpt.append('rs3 : ' + 'x'+str(rs3))
+                            value['rs3']['x'+str(rs3)] += 1
+                        #----------------------------------------------------
                         if 'rd' in value and is_rd_valid and 'x'+str(rd) in value['rd']:
                             if value['rd']['x'+str(rd)] == 0:
                                 stats.ucovpt.append('rd : ' + 'x'+str(rd))
@@ -929,8 +984,11 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                     stats.ucode_seq = []
 
     if commitvalue is not None:
-        if rd_type == 'x':
+        if rd_type == 'x'and has_Zfinx==0:
             arch_state.x_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
+        elif rd_type == 'x'and has_Zfinx==1:
+            offset = len(commitvalue[2])-len(arch_state.x_rf[int(commitvalue[1])])
+            arch_state.x_rf[int(commitvalue[1])] =  str(commitvalue[2][offset:])
         elif rd_type == 'f':
             offset = len(commitvalue[2])-len(arch_state.f_rf[int(commitvalue[1])])
             arch_state.f_rf[int(commitvalue[1])] =  str(commitvalue[2][offset:])
@@ -1026,6 +1084,24 @@ def compute(trace_file, test_name, cgf, parser_name, decoder_name, detailed, xle
             for (label,coverpt) in obj_dict.keys():
                 obj_dict[(label,coverpt)].process(cross_cover_queue, window_size,addr_pairs)
             cross_cover_queue.pop(0)
+        #-----------------------------ZFINX------------------------------------
+        #has_Zfinx captures the presence of ZFINX in the ISA
+        has_Zfinx = 0
+        if "_Zfinx" in str(rcgf[list(rcgf.keys())[0]]['config']):
+            has_Zfinx = 1
+        #Internal decoder fills the instrObj.rs1/rs2/rs3/reg_commit values with 'f' however for Zfinx 'x' has to be used.
+        #Below code is for modifying the objects with 'x' if Zfinx is in ISA. 
+        if has_Zfinx==1 and any(float_instr in instrObj.mnemonic for float_instr in ["fadd.s","fsub.s","fclass.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fcvt.s.l", "fcvt.s.lu", "fmadd.s","fcvt.l.s","fcvt.lu.s" ]):
+            if instrObj.reg_commit is not None:
+                instrObj.reg_commit = ('x', instrObj.reg_commit[1], instrObj.reg_commit[2])
+            instrObj.rs1 = (instrObj.rs1[0],'x')
+            if instrObj.rs2 is not None:
+                instrObj.rs2 = (instrObj.rs2[0],'x')
+            if instrObj.rs3 is not None:
+                instrObj.rs3 = (instrObj.rs3[0],'x')
+            instrObj.rd = (instrObj.rd[0],'x')
+
+        #-----------------------------------------------------------------------
         rcgf = compute_per_line(instrObj, rcgf, xlen, addr_pairs, sig_addrs)
 
     ## Check for cross coverage for end instructions
