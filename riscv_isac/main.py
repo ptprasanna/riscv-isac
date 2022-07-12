@@ -108,6 +108,7 @@ def cli(verbose):
         multiple=True,
         help = "Coverage labels to consider for this run."
 )
+<<<<<<< HEAD
 @click.option('--xlen','-x',
         type=click.Choice(['32','64']),
         default='32',
@@ -126,6 +127,21 @@ def coverage(elf,trace_file, window_size, cgf_file, detailed,parser_name, decode
         sig_label, dump,cov_label, xlen, no_count, procs):
     isac(output_file,elf,trace_file, window_size, expand_cgf(cgf_file,int(xlen)), parser_name, decoder_name, parser_path, decoder_path, detailed, test_label,
             sig_label, dump, cov_label, int(xlen), no_count, procs)
+=======
+@click.option(
+        '--flen','-f',
+        type=click.Choice(['32','64','16']),
+        default='32',
+        help="Floating point length that is being tested, [Default value = 32]"
+    )
+@click.option('--xlen','-x',type=click.Choice(['32','64']),default='32',help="XLEN value for the ISA.")
+def coverage(elf,trace_file, window_size, cgf_file, detailed,parser_name, decoder_name, parser_path, decoder_path,output_file, test_label,
+        sig_label, dump,cov_label, xlen, flen):
+    isac(output_file,elf,trace_file, window_size, expand_cgf(cgf_file,int(xlen)), parser_name, decoder_name, parser_path, decoder_path, detailed, test_label,
+            sig_label, dump, cov_label, int(xlen), int(flen))
+
+
+>>>>>>> d85123d5c2089e22dd0a97d1581f7f0909b7f806
 
 @cli.command(help = "Merge given coverage files.")
 @click.argument(
