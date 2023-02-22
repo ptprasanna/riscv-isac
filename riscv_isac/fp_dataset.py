@@ -268,6 +268,16 @@ def comments_parser(coverpoints):
         cvpts.append((cvpt+ " #nosat",comment))
     return cvpts
 
+def sgn_prefix(iflen,flen,inxFlag,c,cvpt):
+    sp=''
+    if(flen>iflen and inxFlag):
+        for x in range(1,c+1):
+            if 'fs'+str(x)+' == 1' in cvpt:
+                sp += ' and rs'+str(x)+'_sgn_prefix == 0x'+'f'*int((flen-iflen)/4)
+            else:
+                sp += ' and rs'+str(x)+'_sgn_prefix == 0x0'
+    return sp
+
 def ibm_b1(flen, iflen, opcode, ops, inxFlg=False):
     '''
     IBM Model B1 Definition:
@@ -326,6 +336,7 @@ def ibm_b1(flen, iflen, opcode, ops, inxFlg=False):
             ["fclass","flt","fmax","fsgnjn","fmin","fsgnj","feq","flw","fsw","fsgnjx","fld","fle"]:
                 cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
 
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -427,7 +438,7 @@ def ibm_b2(flen, iflen, opcode, ops, inxFlg=False, int_val = 100, seed = -1):
         rexp = bin_val[1:e_sz+1]
         rman = bin_val[e_sz+1:]
         rs1_exp = rs3_exp = rexp
-        rs1_bin = bin(random.randrange(1,))
+        rs1_bin = bin(random.randrange(1,int_val))
         rs3_bin = bin(random.randrange(1,int_val))
         rs1_bin = ('0b0'+rexp+('0'*(m_sz-(len(rs1_bin)-2)))+rs1_bin[2:])
         rs3_bin = ('0b0'+rexp+('0'*(m_sz-(len(rs3_bin)-2)))+rs3_bin[2:])
@@ -474,6 +485,7 @@ def ibm_b2(flen, iflen, opcode, ops, inxFlg=False, int_val = 100, seed = -1):
             cvpt += (extract_fields(iflen,c[x-1],str(x)))
             cvpt += " and "
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -684,6 +696,7 @@ def ibm_b3(flen,iflen, opcode, ops, inxFlg=False, seed=-1):
                 cvpt += " and "
             # cvpt += 'rm_val == '+str(rm)
             cvpt =  sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
@@ -866,6 +879,7 @@ def ibm_b4(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
                 cvpt += " and "
             # cvpt += 'rm_val == '+str(rm)
             cvpt =  sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
@@ -1068,6 +1082,7 @@ def ibm_b5(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
                 cvpt += " and "
             # cvpt += 'rm_val == '+str(rm)
             cvpt =  sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
@@ -1229,6 +1244,7 @@ def ibm_b6(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
                 cvpt += " and "
             cvpt =  sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
             # cvpt += 'rm_val == '+str(rm)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
@@ -1421,6 +1437,7 @@ def ibm_b7(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
             cvpt += " and "
         # cvpt += 'rm_val == 3'
         cvpt = sanitise(3,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -1614,6 +1631,7 @@ def ibm_b8(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
                 cvpt += " and "
             cvpt =  sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
             # cvpt += 'rm_val == '+str(rm)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
@@ -1821,6 +1839,7 @@ def ibm_b9(flen, iflen, opcode, ops, inxFlg=False):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -1926,6 +1945,7 @@ def ibm_b10(flen, iflen, opcode, ops, inxFlg=False, N=-1, seed=-1):
             cvpt += " and "
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
         # cvpt += 'rm_val == 0'
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -2222,6 +2242,7 @@ def ibm_b11(flen, iflen, opcode, ops, inxFlg=False, N=-1, seed=-1):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -2335,6 +2356,7 @@ def ibm_b12(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
             cvpt += " and "
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
         # cvpt += 'rm_val == 0'
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, 3):
             cvpt += 'rs'+str(y)+'_val=='
@@ -2443,6 +2465,7 @@ def ibm_b13(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
             cvpt += " and "
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
         # cvpt += 'rm_val == 0'
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -2574,6 +2597,7 @@ def ibm_b14(flen, iflen, opcode, ops, inxFlg=False, N=-1, seed=-1):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, 4):
             cvpt += 'rs'+str(y)+'_val=='
@@ -2870,6 +2894,7 @@ def ibm_b15(flen, iflen, opcode, ops, inxFlg=False, N=-1, seed=-1):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -3003,6 +3028,7 @@ def ibm_b16(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -3133,6 +3159,7 @@ def ibm_b17(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
             cvpt += " and "
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
         # cvpt += 'rm_val == 0'
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -3464,6 +3491,7 @@ def ibm_b18(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -3629,6 +3657,7 @@ def ibm_b19(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
         # elif opcode in []:
             # cvpt = sanitise(2,cvpt,iflen,flen)
             # cvpt += 'rm_val == 2'
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -3832,6 +3861,7 @@ def ibm_b20(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
             cvpt += " and "
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
         # cvpt += 'rm_val == 0'
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -3901,6 +3931,7 @@ def ibm_b21(flen, iflen, opcode, ops, inxFlg=False):
             cvpt += " and "
         if opcode.split('.')[0] in ["fdiv"]:
             cvpt =  sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -4095,6 +4126,7 @@ def ibm_b22(flen, iflen, opcode, ops, inxFlg=False, seed=10):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -4183,6 +4215,7 @@ def ibm_b23(flen, iflen, opcode, ops, inxFlg=False):
             else:
                 cvpt = sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
                 # cvpt += str(rm)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
@@ -4278,6 +4311,7 @@ def ibm_b24(flen, iflen, opcode, ops, inxFlg=False):
             else: 
                 cvpt = sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
                 # cvpt += str(rm)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
@@ -4492,6 +4526,7 @@ def ibm_b27(flen, iflen, opcode, ops, inxFlg=False, seed=10):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -4607,6 +4642,7 @@ def ibm_b28(flen, iflen, opcode, ops, inxFlg=False, seed=10):
             cvpt += " and "
         # cvpt += 'rm_val == 0'
         cvpt = sanitise(0,cvpt,iflen,flen,ops,inxFlg)
+        cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
         cvpt += ' # '
         for y in range(1, ops+1):
             cvpt += 'rs'+str(y)+'_val=='
@@ -4690,6 +4726,7 @@ def ibm_b29(flen, iflen, opcode, ops, inxFlg=False, seed=10):
             else:
                 cvpt = sanitise(rm,cvpt,iflen,flen,ops,inxFlg)
                 # cvpt += str(rm)
+            cvpt += sgn_prefix(iflen,flen,inxFlg,ops,cvpt)
             cvpt += ' # '
             for y in range(1, ops+1):
                 cvpt += 'rs'+str(y)+'_val=='
