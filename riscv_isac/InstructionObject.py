@@ -1,7 +1,7 @@
 import struct
 
 
-unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu','flw','fld','fsw','fsd',\
+unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu','flh','flw','fld','fsh','fsw','fsd',\
         'bgeu', 'bltu', 'sltiu', 'sltu','c.lw','c.ld','c.lwsp','c.ldsp',\
         'c.sw','c.sd','c.swsp','c.sdsp','mulhu','divu','remu','divuw',\
         'remuw','aes64ds','aes64dsm','aes64es','aes64esm','aes64ks2',\
@@ -46,7 +46,7 @@ def evaluator_func(instr_var_name, cond):
     return evaluator_func_registration_decorator
 
 
-''' Instruction Object '''
+''' Instruction Object ''' 
 class instructionObject():
     '''
         Instruction object class
@@ -134,6 +134,8 @@ class instructionObject():
             instr_vars['iflen'] = 32
         elif self.instr_name.endswith(".d"):
             instr_vars['iflen'] = 64
+        elif self.instr_name.endswith(".h"):
+            instr_vars['iflen'] = 16
 
         # capture the operands
         if self.rs1 is not None:
@@ -163,6 +165,8 @@ class instructionObject():
             ea_align = (self.instr_addr+(imm_val<<1)) % 4
         if self.instr_name == "jalr":
             ea_align = (rs1_val + imm_val) % 4
+        if self.instr_name in ['fsh','flh']:
+            ea_align = (rs1_val + imm_val) % 2
         if self.instr_name in ['sw','sh','sb','lw','lhu','lh','lb','lbu','lwu','flw','fsw']:
             ea_align = (rs1_val + imm_val) % 4
         if self.instr_name in ['ld','sd','fld','fsd']:
@@ -197,8 +201,8 @@ class instructionObject():
             if self.rd[1] == 'x':
                 arch_state.x_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
             elif self.rd[1] == 'f':
-                arch_state.f_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
-
+               arch_state.f_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
+                
         csr_commit = self.csr_commit
         if csr_commit is not None:
             for commits in csr_commit:
@@ -364,10 +368,13 @@ class instructionObject():
         if reg_val is None:
             return
 
-        if iflen == 32:
+        if iflen == 16:
+            e_sz = 5
+            m_sz = 10
+        elif iflen == 32:
             e_sz = 8
             m_sz = 23
-        else:
+        else: 
             e_sz = 11
             m_sz = 52
         bin_val = ('{:0'+str(flen)+'b}').format(reg_val)
@@ -381,6 +388,10 @@ class instructionObject():
                     f_ext_vars['rs'+postfix+'_sgn_prefix'] = int(0x0)
             else:
                 f_ext_vars['rs'+postfix+'_nan_prefix'] = int(bin_val[0:flen-iflen],2)
+            # Uncomment if you are running ISAC and comment for CTG
+            #f_ext_vars['rs'+postfix+'_nan_prefix'] = int(bin_val[0:flen-iflen],2)
+            f_ext_vars['rs'+postfix+'_nan_prefix'] = 65535
+
             bin_val = bin_val[flen-iflen:]
 
         f_ext_vars['fs'+postfix] = int(bin_val[0], 2)

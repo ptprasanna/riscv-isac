@@ -114,8 +114,8 @@ def cli(verbose):
         help="XLEN value for the ISA."
 )
 @click.option('--flen','-f',
-        type=click.Choice(['32','64']),
-        default='32',
+        type=click.Choice(['16','32','64']),
+        default='16',
         help="FLEN value for the ISA."
 )
 @click.option('--z-inx', '-ix',
@@ -164,8 +164,8 @@ def coverage(elf,trace_file, window_size, cgf_file, detailed,parser_name, decode
         help="Coverage Group File."
     )
 @click.option('--flen','-f',
-        type=click.Choice(['32','64']),
-        default='32',
+        type=click.Choice(['16','32','64']),
+        default='16',
         help="FLEN value for the ISA."
 )
 @click.option('--xlen','-x',type=click.Choice(['32','64']),default='32',help="XLEN value for the ISA.")
@@ -196,7 +196,7 @@ def merge(files,detailed,p,cgf_file,output_file,flen,xlen):
         required = True
     )
 @click.option('--xlen','-x',type=click.Choice(['32','64']),default='32',help="XLEN value for the ISA.")
-@click.option('--flen','-f',type=click.Choice(['32','64']),default='32',help="FLEN value for the ISA.")
+@click.option('--flen','-f',type=click.Choice(['16','32','64']),default='16',help="FLEN value for the ISA.")
 def normalize(cgf_file,output_file,xlen,flen):
     logger.info("Writing normalized CGF to "+str(output_file))
     with open(output_file,"w") as outfile:

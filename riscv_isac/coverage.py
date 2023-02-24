@@ -278,6 +278,9 @@ class archState:
         else:
             self.x_rf = ['0000000000000000']*32
 
+        if flen == 16:
+            self.f_rf = ['0000']*32
+            self.fcsr = 0
         if flen == 32:
             self.f_rf = ['00000000']*32
         else:
@@ -585,7 +588,6 @@ def compute_per_line(queue, event, cgf_queue, stats_queue, cgf, xlen, flen, addr
             instr_vars = {}
             instr_vars['inxFlag'] = instr.inxFlg
             instr.evaluate_instr_vars(xlen, flen, arch_state, csr_regfile, instr_vars)
-
             if 'rs1' in instr_vars:
                 rs1 = instr_vars['rs1']
             if 'rs2' in instr_vars:
