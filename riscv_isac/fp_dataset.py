@@ -2195,12 +2195,8 @@ def ibm_b10(flen, iflen, opcode, ops, inxFlg=False, N=-1, seed=-1):
     b10_comb = []
     comment = []
     for i in range(1,N):
-        ###If iflen = 16 then uncomment the below lines for exponent 
-        rs1 = ("{:e}".format(random.uniform(1,maxnum/1000)))
-        rs2 = ("{:e}".format(random.uniform(1,maxnum/1000)))
-        ######
-        #rs1 = random.uniform(1,maxnum/1000)
-        #rs2 = random.uniform(1,maxnum/1000)
+        rs1 = random.uniform(1,maxnum/1000)
+        rs2 = random.uniform(1,maxnum/1000)
         rs1_exp = str(rs1).split('e')[1]
 
         rs2_exp = -1*random.randrange(int(math.log(pow(10,int(rs1_exp)),2))+4, exp_max)
@@ -4061,12 +4057,8 @@ def ibm_b19(flen, iflen, opcode, ops, inxFlg=False, seed=-1):
     sub_normal_neg = []
     zero = [[0e0,'Zero']]
     for i in range(5):
-        ### If iflen = 16  then uncomment the below lines
-        normal.append(["{:e}".format(random.uniform(1,maxnum)),'Normal'])
-        normal_neg.append(["{:e}".format(random.uniform(-1*maxnum,-1)),'-Normal'])
-        ###
-        #normal.append([random.uniform(1,maxnum),'Normal'])
-        #normal_neg.append([random.uniform(-1*maxnum,-1),'-Normal'])
+        normal.append([random.uniform(1,maxnum),'Normal'])
+        normal_neg.append([random.uniform(-1*maxnum,-1),'-Normal'])
         sub_normal.append([random.uniform(minsubnorm,maxsubnorm),'Subnormal'])
         sub_normal_neg.append([random.uniform(-1*maxsubnorm,-1*minsubnorm),'-Subnormal'])
 

@@ -387,10 +387,7 @@ class instructionObject():
                 else:
                     f_ext_vars['rs'+postfix+'_sgn_prefix'] = int(0x0)
             else:
-                f_ext_vars['rs'+postfix+'_nan_prefix'] = int(bin_val[0:flen-iflen],2)
-            # Uncomment if you are running ISAC and comment for CTG
-            #f_ext_vars['rs'+postfix+'_nan_prefix'] = int(bin_val[0:flen-iflen],2)
-            f_ext_vars['rs'+postfix+'_nan_prefix'] = 65535
+                f_ext_vars['rs'+postfix+'_nan_prefix'] = 65535           
 
             bin_val = bin_val[flen-iflen:]
 
