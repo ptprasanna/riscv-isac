@@ -1,5 +1,4 @@
 import riscv_isac.plugins as plugins
-
 class disassembler():
 
     def __init__(self):
@@ -1651,12 +1650,11 @@ class disassembler():
 
     def fmadd(self, instrObj):
         instr = instrObj.instr
-        rd = ((instr & self.RD_MASK) >> 7, 'f')
+        rd = ((instr & self.RD_MASK) >> 7, 'f' if not self.inxFlag else 'x')
         rm = (instr >> 12) & 0x00000007
-        rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
-        rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
+        rs1 = ((instr & self.RS1_MASK) >> 15, 'f' if not self.inxFlag else 'x')
+        rs2 = ((instr & self.RS2_MASK) >> 20, 'f' if not self.inxFlag else 'x')
         rs3 = ((instr >> 27), 'f')
-        #size_bit = (instr >> 25) & 0x00000001
         size_bit = (instr >> 25) & 0x00000003
 
         instrObj.rs1 = rs1
@@ -1676,12 +1674,11 @@ class disassembler():
 
     def fmsub(self, instrObj):
         instr = instrObj.instr
-        rd = ((instr & self.RD_MASK) >> 7, 'f')
+        rd = ((instr & self.RD_MASK) >> 7, 'f' if not self.inxFlag else 'x')
         rm = (instr >> 12) & 0x00000007
-        rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
-        rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
-        rs3 = ((instr >> 27), 'f')
-        #size_bit = (instr >> 25) & 0x00000001
+        rs1 = ((instr & self.RS1_MASK) >> 15, 'f' if not self.inxFlag else 'x')
+        rs2 = ((instr & self.RS2_MASK) >> 20, 'f' if not self.inxFlag else 'x')
+        rs3 = ((instr >> 27), 'f' if not self.inxFlag else 'x')
         size_bit = (instr >> 25) & 0x00000003
         instrObj.rs1 = rs1
         instrObj.rs2 = rs2
@@ -1701,12 +1698,11 @@ class disassembler():
 
     def fnmsub(self, instrObj):
         instr = instrObj.instr
-        rd = ((instr & self.RD_MASK) >> 7, 'f')
+        rd = ((instr & self.RD_MASK) >> 7, 'f' if not self.inxFlag else 'x')
         rm = (instr >> 12) & 0x00000007
-        rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
-        rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
-        rs3 = ((instr >> 27), 'f')
-        #size_bit = (instr >> 25) & 0x00000001
+        rs1 = ((instr & self.RS1_MASK) >> 15, 'f' if not self.inxFlag else 'x')
+        rs2 = ((instr & self.RS2_MASK) >> 20, 'f' if not self.inxFlag else 'x')
+        rs3 = ((instr >> 27), 'f' if not self.inxFlag else 'x')
         size_bit = (instr >> 25) & 0x00000003
 
         instrObj.rs1 = rs1
@@ -1726,12 +1722,11 @@ class disassembler():
 
     def fnmadd(self, instrObj):
         instr = instrObj.instr
-        rd = ((instr & self.RD_MASK) >> 7, 'f')
+        rd = ((instr & self.RD_MASK) >> 7, 'f' if not self.inxFlag else 'x')
         rm = (instr >> 12) & 0x00000007
-        rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
-        rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
+        rs1 = ((instr & self.RS1_MASK) >> 15, 'f' if not self.inxFlag else 'x')
+        rs2 = ((instr & self.RS2_MASK) >> 20, 'f' if not self.inxFlag else 'x')
         rs3 = ((instr >> 27), 'f')
-        #size_bit = (instr >> 25) & 0x00000001
         size_bit = (instr >> 25) & 0x00000003   # fmt bits
 
         instrObj.rs1 = rs1
@@ -1750,10 +1745,10 @@ class disassembler():
 
     def rv32_rv64_float_ops(self, instrObj):
         instr = instrObj.instr
-        rd = ((instr & self.RD_MASK) >> 7, 'f')
+        rd = ((instr & self.RD_MASK) >> 7, 'x' if self.inxFlag else 'f')
         rm = (instr >> 12) & 0x00000007
-        rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
-        rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
+        rs1 = ((instr & self.RS1_MASK) >> 15, 'x' if self.inxFlag else 'f')
+        rs2 = ((instr & self.RS2_MASK) >> 20, 'x' if self.inxFlag else 'f')
         funct7 = (instr >> 25)
 
         instrObj.rs1 = rs1

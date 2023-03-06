@@ -254,7 +254,7 @@ class archState:
     Defines the architectural state of the RISC-V device.
     '''
 
-    def __init__ (self, xlen, flen):
+    def __init__ (self, xlen, flen,inxFlg):
         '''
         Class constructor
 
@@ -287,6 +287,7 @@ class archState:
             self.f_rf = ['0000000000000000']*32
         self.pc = 0
         self.flen = flen
+        self.inxFlg = inxFlg
 
 class statistics:
     '''
@@ -561,6 +562,7 @@ def compute_per_line(queue, event, cgf_queue, stats_queue, cgf, xlen, flen, addr
     # List to hold hit coverpoints
     hit_covpts = []
     rcgf = copy.deepcopy(cgf)
+    inxFlg = arch_state.inxFlg
     # Enter the loop only when Event is not set or when the
     # instruction object queue is not empty
     while (event.is_set() == False) or (queue.empty() == False):
@@ -856,7 +858,7 @@ def compute(trace_file, test_name, cgf, parser_name, decoder_name, detailed, xle
         dump_f.close()
         sys.exit(0)
 
-    arch_state = archState(xlen,flen)
+    arch_state = archState(xlen,flen, inxFlg)
     csr_regfile = csr_registers(xlen)
     stats = statistics(xlen, flen)
     cross_cover_queue = []
